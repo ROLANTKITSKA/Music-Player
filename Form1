@@ -1,0 +1,404 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SQLite;
+using System.IO;
+
+namespace MusicApplication
+{    
+    public partial class Form1 : Form
+    {
+        String connectionString = "Data source= Tracks.db;Version=3";
+        SQLiteConnection connection;
+
+        List<Songs> songsList = new List<Songs>(); // Δήλωση της λίστας songsList
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        public void Form1_Load(object sender, EventArgs e)
+        {            
+            // Δημιουργία Βάσης             
+            connection = new SQLiteConnection(connectionString);
+            connection.Open();
+            String createTableSQL = "Create table if not exists Tracks(" +
+          "ID Integer primary key autoincrement," +
+          "ArtistName Text No Null," +
+          "Date Text," +
+          "Type Text," +
+          "Link Text," +
+          "Language Text," +
+          "Photo Text)";
+
+            SQLiteCommand command = new SQLiteCommand(createTableSQL, connection);
+            command.ExecuteNonQuery();
+            String selectIDsSQL = "Select ArtistName from Tracks";
+            SQLiteCommand command2 = new SQLiteCommand(selectIDsSQL, connection);
+            SQLiteDataReader sQLiteDataReaderreader = command2.ExecuteReader();
+            comboBox1.Items.Clear();
+            while (sQLiteDataReaderreader.Read())
+            {
+                comboBox1.Items.Add(sQLiteDataReaderreader.GetString(0));
+            }
+            connection.Close();
+
+            // Αρχικοποιούμε τη λίστα τραγουδιών με τις επιλογές από το comboBox1
+            foreach (string item in comboBox1.Items)
+            {
+                songsList.Add(new Songs(item.ToString()));                
+            }
+
+            //Εμφανιση Τραγουδιου 1 Στην Εφαρμογη
+            
+            numb y = new numb();
+            textBox13.Text = y.randomnumber(comboBox1.Items.Count).ToString();
+            connection.Open();
+            selectIDsSQL = "Select * from Tracks where ArtistName=@artistname";
+            command2 = new SQLiteCommand(selectIDsSQL, connection);
+            command2.Parameters.AddWithValue("artistname", comboBox1.Items[int.Parse(textBox13.Text)]);
+            sQLiteDataReaderreader = command2.ExecuteReader();
+            while (sQLiteDataReaderreader.Read())
+            {
+                textBox7.Text = sQLiteDataReaderreader.GetString(1);
+                textBox8.Text = sQLiteDataReaderreader.GetString(2);
+                pictureBox2.Load(sQLiteDataReaderreader.GetString(6));
+            }
+            connection.Close(); 
+
+            //Εμφανιση Τραγουδιου 2 Στην Εφαρμογη
+            numb y2 = new numb();
+            do
+            {
+                textBox13.Text = y2.randomnumber(comboBox1.Items.Count).ToString();
+
+                y2.randomnumber(comboBox1.Items.Count).ToString();
+            } while (y2 == y);
+            connection.Open();
+            selectIDsSQL = "Select * from Tracks where ArtistName=@artistname";
+            command2 = new SQLiteCommand(selectIDsSQL, connection);
+            command2.Parameters.AddWithValue("artistname", comboBox1.Items[int.Parse(textBox13.Text)]);
+            sQLiteDataReaderreader = command2.ExecuteReader();
+            while (sQLiteDataReaderreader.Read())
+            {
+                textBox11.Text = sQLiteDataReaderreader.GetString(1);
+                textBox12.Text = sQLiteDataReaderreader.GetString(2);
+                pictureBox3.Load(sQLiteDataReaderreader.GetString(6));
+            }
+            connection.Close();           
+        }  
+
+            //Προσθήκη τραγουδιού 
+            private void button1_Click(object sender, EventArgs e)
+        {
+            if (textBox1.Text != "" && textBox3.Text != "" && textBox4.Text != "" && textBox6.Text != "")
+            {
+
+                // Check if the song already exists
+                connection.Open();
+                string checkExistenceQuery = "SELECT COUNT(*) FROM Tracks WHERE ArtistName=@artistname";
+                SQLiteCommand checkExistenceCommand = new SQLiteCommand(checkExistenceQuery, connection);
+                checkExistenceCommand.Parameters.AddWithValue("artistname", textBox1.Text);
+                int existingSongsCount = Convert.ToInt32(checkExistenceCommand.ExecuteScalar());
+                connection.Close();
+
+                if (existingSongsCount > 0)
+                {
+                    MessageBox.Show("This song already exists.");
+                    return; // Exit the method 
+                }
+
+                connection.Open();
+                string insertSQL = "Insert into Tracks(" +
+                    "ArtistName, Date, Type, Link, Language , Photo)" +
+                    "values(@artistname,@date,@type,@link,@language,@photo)";
+                SQLiteCommand command = new SQLiteCommand(insertSQL, connection);
+                command.Parameters.AddWithValue("artistname", textBox1.Text);
+                command.Parameters.AddWithValue("date", textBox2.Text);
+                command.Parameters.AddWithValue("type", textBox3.Text);
+                command.Parameters.AddWithValue("link", textBox4.Text);
+                command.Parameters.AddWithValue("language", textBox5.Text);
+                command.Parameters.AddWithValue("photo", textBox6.Text);
+                int rowsInserted = command.ExecuteNonQuery();
+                comboBox1.Items.Add(textBox1.Text);
+                comboBox2.Items.Add(textBox1.Text);
+                connection.Close();
+                pictureBox1.Load(textBox6.Text);
+                MessageBox.Show(rowsInserted + " Successful Addition!");
+
+                label8.Text = textBox1.Text;             
+            }
+            else 
+            {
+                MessageBox.Show("Track name, Photo, Link and Music Type Are Necessary!"); 
+            }
+            
+        }
+       
+        // Update Method 
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (comboBox1.Items.Count != 0)
+            {
+                connection.Open();
+                String updateSQL = "Update Tracks " +
+                    "set Date=@date," +
+                    "Type=@type," +
+                    "Link=@link," +
+                    "Language=@language," +
+                    "Photo=@photo " +
+                    "where ArtistName=@artistname";
+                SQLiteCommand command = new SQLiteCommand(updateSQL, connection);
+                command.Parameters.AddWithValue("artistname", comboBox1.Text);
+                command.Parameters.AddWithValue("date", textBox2.Text);
+                command.Parameters.AddWithValue("type", textBox3.Text);
+                command.Parameters.AddWithValue("link", textBox4.Text);
+                command.Parameters.AddWithValue("language", textBox5.Text);
+                command.Parameters.AddWithValue("photo", textBox6.Text);
+
+                int rowsUpdated = command.ExecuteNonQuery();
+                connection.Close();
+                pictureBox1.Load(textBox6.Text);
+                MessageBox.Show(rowsUpdated + " record updated");
+                label8.Text = textBox1.Text;
+            }
+            else { MessageBox.Show("Select A Track To Update!"); }
+        }
+
+        //Διαγραφή Τραγουδιού
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (comboBox1.Items.Count != 0)
+            {
+                connection.Open();
+                string deleterecipe = "Delete from Tracks where ArtistName=@artistname;";
+                SQLiteCommand command = new SQLiteCommand(deleterecipe, connection);
+                command.Parameters.AddWithValue("artistname", comboBox1.Text);
+
+                // Execute the deletion command
+                int rowsDeleted = command.ExecuteNonQuery();
+
+                connection.Close();
+
+                if (rowsDeleted > 0)
+                {
+                    // If deletion was successful, remove the item from comboBox1.Items
+                    comboBox1.Items.Remove(comboBox1.Text);
+                    MessageBox.Show("Track was deleted successfully");
+                }
+                else
+                {
+                    MessageBox.Show("Deletion failed. The track doesn't exist or an error occurred.");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Select a track to delete!");
+            }
+        }
+
+        // Εμφάνιση Τραγουδιού
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            connection.Open();
+            String selectIDsSQL = "Select * from Tracks where ArtistName=@artistname";
+            SQLiteCommand command2 = new SQLiteCommand(selectIDsSQL, connection);
+            command2.Parameters.AddWithValue("artistname", comboBox1.Text);
+            SQLiteDataReader sQLiteDataReaderreader = command2.ExecuteReader();
+            while (sQLiteDataReaderreader.Read())
+            {
+                textBox1.Text = sQLiteDataReaderreader.GetString(1);
+                textBox2.Text = sQLiteDataReaderreader.GetString(2);
+                textBox3.Text = sQLiteDataReaderreader.GetString(3);
+                textBox4.Text = sQLiteDataReaderreader.GetString(4);
+                textBox5.Text = sQLiteDataReaderreader.GetString(5);
+                textBox6.Text = sQLiteDataReaderreader.GetString(6);
+                pictureBox1.Load(sQLiteDataReaderreader.GetString(6));
+                label8.Text = textBox1.Text;
+               
+                string path = Path.GetDirectoryName(Application.ExecutablePath);
+                string parentDirectory = Directory.GetParent(path)?.FullName;
+                string parentDirectory1 = Directory.GetParent(parentDirectory)?.FullName;
+                //MessageBox.Show(parentDirectory1 + '\\' + textBox4.Text);                
+                if (Path.IsPathRooted(textBox4.Text))
+                {
+                    axWindowsMediaPlayer1.URL = textBox4.Text;
+
+                } else
+                {
+                    axWindowsMediaPlayer1.URL = parentDirectory1 + '\\' + textBox4.Text;
+                }
+            }
+            connection.Close();
+
+            findFavourite();
+        }
+
+        void findFavourite()
+        {
+            // Ενημέρωση της λίστας songsList
+            var selectedSong = songsList.FirstOrDefault(song => song.Title == textBox1.Text);
+            if (selectedSong != null)
+            {
+                selectedSong.ClickCount++;
+            }
+
+            songsList = songsList.OrderByDescending(song => song.ClickCount).ToList();
+
+            comboBox2.Items.Clear();
+            foreach (var song in songsList)
+            {
+                if (song.ClickCount != 0)
+                {
+                    comboBox2.Items.Add(song.Title);
+                }
+            }
+        }
+
+        // Play Video 
+        private void button4_Click(object sender, EventArgs e)
+        {
+            axWindowsMediaPlayer1.Ctlcontrols.play();
+            findFavourite();
+        }
+
+        //Pause Video 
+        private void button5_Click(object sender, EventArgs e)
+        {
+            axWindowsMediaPlayer1.Ctlcontrols.pause();
+        }
+
+        //Stop Video 
+        private void button6_Click(object sender, EventArgs e)
+        {
+            axWindowsMediaPlayer1.Ctlcontrols.stop();
+        }
+
+        //Φορτώνουμε Βίντεο στο σύστημα και αποθηκεύουμε το link του στο textbox 
+        private void button7_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                textBox4.Text = openFileDialog1.FileName;
+            }
+            axWindowsMediaPlayer1.URL = textBox4.Text;
+        }
+
+        // Τυχαία Εμφάνιση Τραγουδιού
+        private void button8_Click(object sender, EventArgs e)
+        {
+            numb y = new numb();
+            comboBox1.SelectedIndex = y.randomnumber(comboBox1.Items.Count);
+
+
+            connection.Open();
+            String selectIDsSQL = "Select * from Tracks where ArtistName=@artistname";
+            SQLiteCommand command2 = new SQLiteCommand(selectIDsSQL, connection);
+            command2.Parameters.AddWithValue("artistname", comboBox1.Text);
+            SQLiteDataReader sQLiteDataReaderreader = command2.ExecuteReader();
+            while (sQLiteDataReaderreader.Read())
+            {
+                textBox1.Text = sQLiteDataReaderreader.GetString(1);
+                textBox2.Text = sQLiteDataReaderreader.GetString(2);
+                textBox3.Text = sQLiteDataReaderreader.GetString(3);
+                textBox4.Text = sQLiteDataReaderreader.GetString(4);
+                textBox5.Text = sQLiteDataReaderreader.GetString(5);
+                textBox6.Text = sQLiteDataReaderreader.GetString(6);
+                pictureBox1.Load(sQLiteDataReaderreader.GetString(6));
+                label8.Text = textBox1.Text;
+                string path = Path.GetDirectoryName(Application.ExecutablePath);
+                string parentDirectory = Directory.GetParent(path)?.FullName;
+                string parentDirectory1 = Directory.GetParent(parentDirectory)?.FullName;
+                if (Path.IsPathRooted(textBox4.Text))
+                {
+                    axWindowsMediaPlayer1.URL = textBox4.Text;
+
+                }
+                else
+                {
+                    axWindowsMediaPlayer1.URL = parentDirectory1 + '\\' + textBox4.Text;
+                }
+            }
+            connection.Close();
+            findFavourite();
+        }
+
+        //Εμφάνιση Τραγουδιου Με Κλικ Στο PictureBox2
+        private void pictureBox2_Click(object sender, EventArgs e)
+        {
+            connection.Open();
+            String selectIDsSQL = "Select * from Tracks where ArtistName=@artistname";
+            SQLiteCommand command2 = new SQLiteCommand(selectIDsSQL, connection);
+            command2.Parameters.AddWithValue("artistname", textBox7.Text);
+            SQLiteDataReader sQLiteDataReaderreader = command2.ExecuteReader();
+            while (sQLiteDataReaderreader.Read())
+            {
+                textBox1.Text = sQLiteDataReaderreader.GetString(1);
+                textBox2.Text = sQLiteDataReaderreader.GetString(2);
+                textBox3.Text = sQLiteDataReaderreader.GetString(3);
+                textBox4.Text = sQLiteDataReaderreader.GetString(4);
+                textBox5.Text = sQLiteDataReaderreader.GetString(5);
+                textBox6.Text = sQLiteDataReaderreader.GetString(6);
+                pictureBox1.Load(sQLiteDataReaderreader.GetString(6));
+                label8.Text = textBox1.Text;
+                string path = Path.GetDirectoryName(Application.ExecutablePath);
+                string parentDirectory = Directory.GetParent(path)?.FullName;
+                string parentDirectory1 = Directory.GetParent(parentDirectory)?.FullName;
+                if (Path.IsPathRooted(textBox4.Text))
+                {
+                    axWindowsMediaPlayer1.URL = textBox4.Text;
+
+                }
+                else
+                {
+                    axWindowsMediaPlayer1.URL = parentDirectory1 + '\\' + textBox4.Text;
+                }
+            }
+            connection.Close();
+            findFavourite();
+        }
+
+        //Εμφάνιση Τραγουδιου Με Κλικ Στο PictureBox3
+        private void pictureBox3_Click(object sender, EventArgs e)
+        {
+            connection.Open();
+            String selectIDsSQL = "Select * from Tracks where ArtistName=@artistname";
+            SQLiteCommand command2 = new SQLiteCommand(selectIDsSQL, connection);
+            command2.Parameters.AddWithValue("artistname", textBox11.Text);
+            SQLiteDataReader sQLiteDataReaderreader = command2.ExecuteReader();
+            while (sQLiteDataReaderreader.Read())
+            {
+                textBox1.Text = sQLiteDataReaderreader.GetString(1);
+                textBox2.Text = sQLiteDataReaderreader.GetString(2);
+                textBox3.Text = sQLiteDataReaderreader.GetString(3);
+                textBox4.Text = sQLiteDataReaderreader.GetString(4);
+                textBox5.Text = sQLiteDataReaderreader.GetString(5);
+                textBox6.Text = sQLiteDataReaderreader.GetString(6);
+                pictureBox1.Load(sQLiteDataReaderreader.GetString(6));
+                label8.Text = textBox1.Text;
+                string path = Path.GetDirectoryName(Application.ExecutablePath);
+                string parentDirectory = Directory.GetParent(path)?.FullName;
+                string parentDirectory1 = Directory.GetParent(parentDirectory)?.FullName;
+                if (Path.IsPathRooted(textBox4.Text))
+                {
+                    axWindowsMediaPlayer1.URL = textBox4.Text;
+
+                }
+                else
+                {
+                    axWindowsMediaPlayer1.URL = parentDirectory1 + '\\' + textBox4.Text;
+                }
+            }
+            connection.Close();
+            findFavourite();
+        }
+    }
+}
