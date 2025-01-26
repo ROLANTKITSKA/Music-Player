@@ -9,4 +9,4 @@ Designed a dynamic playlist system using a List<Songs> to track user interaction
 
 Implemented a random track selection feature, allowing users to shuffle and play songs from their library with a single click.
 
-[Screenshot (426)](https://github.com/user-attachments/assets/700c84ae-0096-4ebf-9e9c-bed616b46063)
+![Screenshot (426)](https://github.com/user-attachments/assets/464e045e-ad97-45a5-9466-24a279404111)
